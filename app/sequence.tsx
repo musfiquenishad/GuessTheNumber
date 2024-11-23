@@ -210,7 +210,7 @@ export default function Sequence() {
 					animationType="fade"
 					transparent={true}
 					visible={showStory}
-					onShow={() => {
+					onRequestClose={() => {
 						const { sequence, missingNumber } = generateSequence(level);
 						setSequence(sequence);
 						setMissingNumber(missingNumber);
@@ -226,8 +226,8 @@ export default function Sequence() {
 						setTimeout(() => {
 							setShowNumberPad(true);
 						}, 3000);
+						setShowStory(false);
 					}}
-					onRequestClose={() => setShowStory(false)}
 					style={{ margin: 0 }}
 				>
 					<View
@@ -288,6 +288,21 @@ export default function Sequence() {
 								activeOpacity={0.6}
 								underlayColor={"#f97316"}
 								onPress={() => {
+									const { sequence, missingNumber } = generateSequence(level);
+									setSequence(sequence);
+									setMissingNumber(missingNumber);
+									setRoboFeedback(
+										"Analyze the sequence and guess the missing number to unlock the lock on the treasure box."
+									);
+									setTimeout(() => {
+										setShowRoboFeedback(true);
+									}, 600);
+									setTimeout(() => {
+										setShowInputBox(true);
+									}, 2000);
+									setTimeout(() => {
+										setShowNumberPad(true);
+									}, 3000);
 									setShowStory(false);
 								}}
 								className="bg-orange-600 px-24 py-3 flex items-center justify-center rounded-2xl mt-14 mb-5"
@@ -309,15 +324,27 @@ export default function Sequence() {
 					animationType="fade"
 					transparent={true}
 					visible={complete}
-					onShow={() => {
+					onRequestClose={async () => {
+						if (levelUp) {
+							setTimeout(() => {
+								setShowLevelUp(true);
+							}, 1000);
+						}
 						const { sequence, missingNumber } = generateSequence(level);
 						setSequence(sequence);
 						setMissingNumber(missingNumber);
 						setRoboFeedback(
 							"Here is a new sequence, Guess the missing number to unlock the treasure box."
 						);
+						const { sound } = await Audio.Sound.createAsync(
+							require("../assets/sfx/replay.wav")
+						);
+						setSound(sound);
+						await sound.playAsync();
+						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+						setAttempt(1);
+						setComplete(false);
 					}}
-					onRequestClose={() => setComplete(false)}
 					style={{ margin: 0 }}
 				>
 					<View
@@ -517,15 +544,27 @@ export default function Sequence() {
 					animationType="fade"
 					transparent={true}
 					visible={gameOver}
-					onShow={() => {
+					onRequestClose={async () => {
+						if (levelUp) {
+							setTimeout(() => {
+								setShowLevelUp(true);
+							}, 1000);
+						}
 						const { sequence, missingNumber } = generateSequence(level);
 						setSequence(sequence);
 						setMissingNumber(missingNumber);
 						setRoboFeedback(
 							"Here is a new sequence, Guess the missing number to unlock the treasure box."
 						);
+						const { sound } = await Audio.Sound.createAsync(
+							require("../assets/sfx/replay.wav")
+						);
+						setSound(sound);
+						await sound.playAsync();
+						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+						setAttempt(1);
+						setGameOver(false);
 					}}
-					onRequestClose={() => setGameOver(false)}
 					style={{ margin: 0 }}
 				>
 					<View
@@ -638,7 +677,6 @@ export default function Sequence() {
 
 										setAttempt(1);
 										setGuess("");
-										setGameOver(false);
 										const { sound } = await Audio.Sound.createAsync(
 											require("../assets/sfx/replay.wav")
 										);
@@ -647,6 +685,7 @@ export default function Sequence() {
 										Haptics.notificationAsync(
 											Haptics.NotificationFeedbackType.Warning
 										);
+										setGameOver(false);
 									}}
 									style={{
 										paddingVertical: 12,
@@ -686,7 +725,23 @@ export default function Sequence() {
 						setSound(sound);
 						await sound.playAsync();
 					}}
-					onRequestClose={() => setLevelUp(false)}
+					onRequestClose={async () => {
+						const { sequence, missingNumber } = generateSequence(level);
+						setSequence(sequence);
+						setMissingNumber(missingNumber);
+						setRoboFeedback(
+							"Here is a new sequence, Guess the missing number to unlock the treasure box."
+						);
+						const { sound } = await Audio.Sound.createAsync(
+							require("../assets/sfx/replay.wav")
+						);
+						setSound(sound);
+						await sound.playAsync();
+						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+						setAttempt(1);
+						setLevelUp(false);
+						setShowLevelUp(false);
+					}}
 					style={{ margin: 0 }}
 				>
 					<View

@@ -92,16 +92,7 @@ export default function Number(storedLevel: string) {
 			if (newXp >= 5000) {
 				setLevel((prevLevel) => prevLevel + 1);
 				setLevelUp(true);
-				generateRandomNumber(level, minLimit);
-				setRoboFeedback(
-					`I am thinking of a new number between ${minLimit} to ${
-						level * 10
-					}, Now guess the number.`
-				);
-				setAttempt(1);
-				setHintsAvailable(2);
-				setFirstHint("");
-				setSecondHint("");
+
 				return 0;
 			}
 
@@ -174,7 +165,9 @@ export default function Number(storedLevel: string) {
 				animationType="fade"
 				transparent={true}
 				visible={showStory}
-				onShow={() => {
+				onRequestClose={() => {
+					setShowStory(false);
+
 					generateRandomNumber(level, minLimit);
 					setRoboFeedback(
 						`I am thinking of a number between ${minLimit} to ${
@@ -191,7 +184,6 @@ export default function Number(storedLevel: string) {
 						setShowNumberPad(true);
 					}, 3000);
 				}}
-				onRequestClose={() => setShowStory(false)}
 				style={{ margin: 0 }}
 			>
 				<View
@@ -252,6 +244,21 @@ export default function Number(storedLevel: string) {
 							activeOpacity={0.6}
 							underlayColor={"#a3e635"}
 							onPress={() => {
+								generateRandomNumber(level, minLimit);
+								setRoboFeedback(
+									`I am thinking of a number between ${minLimit} to ${
+										level * 10
+									}, Now guess the number.`
+								);
+								setTimeout(() => {
+									setShowRoboFeedback(true);
+								}, 600);
+								setTimeout(() => {
+									setShowInputBox(true);
+								}, 2000);
+								setTimeout(() => {
+									setShowNumberPad(true);
+								}, 3000);
 								setShowStory(false);
 							}}
 							className="bg-lime-500 px-24 py-3 flex items-center justify-center rounded-2xl mt-14 mb-5"
@@ -273,7 +280,26 @@ export default function Number(storedLevel: string) {
 				animationType="fade"
 				transparent={true}
 				visible={gameOver}
-				onRequestClose={() => setGameOver(false)}
+				onRequestClose={async () => {
+					const { sound } = await Audio.Sound.createAsync(
+						require("../assets/sfx/replay.wav")
+					);
+					setSound(sound);
+					await sound.playAsync();
+					Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+					generateRandomNumber(level, minLimit);
+					setRoboFeedback(
+						`I am thinking of a new number between ${minLimit} to ${
+							level * 10
+						}, Now guess the number.`
+					);
+					setGuess("");
+					setAttempt(1);
+					setHintsAvailable(2);
+					setFirstHint("");
+					setSecondHint("");
+					setGameOver(false);
+				}}
 				style={{ margin: 0 }}
 			>
 				<View
@@ -430,6 +456,19 @@ export default function Number(storedLevel: string) {
 				transparent={true}
 				visible={showLevelUp}
 				onShow={async () => {
+					const { sound } = await Audio.Sound.createAsync(
+						require("../assets/sfx/levelUp2.wav")
+					);
+					setSound(sound);
+					await sound.playAsync();
+				}}
+				onRequestClose={async () => {
+					const { sound } = await Audio.Sound.createAsync(
+						require("../assets/sfx/replay.wav")
+					);
+					setSound(sound);
+					await sound.playAsync();
+					Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 					generateRandomNumber(level, minLimit);
 					setRoboFeedback(
 						`I am thinking of a new number between ${minLimit} to ${
@@ -440,13 +479,9 @@ export default function Number(storedLevel: string) {
 					setHintsAvailable(2);
 					setFirstHint("");
 					setSecondHint("");
-					const { sound } = await Audio.Sound.createAsync(
-						require("../assets/sfx/levelUp2.wav")
-					);
-					setSound(sound);
-					await sound.playAsync();
+					setLevelUp(false);
+					setShowLevelUp(false);
 				}}
-				onRequestClose={() => setLevelUp(false)}
 				style={{ margin: 0 }}
 			>
 				<View
@@ -561,7 +596,12 @@ export default function Number(storedLevel: string) {
 				animationType="fade"
 				transparent={true}
 				visible={complete}
-				onShow={() => {
+				onRequestClose={async () => {
+					if (levelUp) {
+						setTimeout(() => {
+							setShowLevelUp(true);
+						}, 1000);
+					}
 					generateRandomNumber(level, minLimit);
 					setRoboFeedback(
 						`I am thinking of a new number between ${minLimit} to ${
@@ -572,13 +612,12 @@ export default function Number(storedLevel: string) {
 					setHintsAvailable(2);
 					setFirstHint("");
 					setSecondHint("");
-				}}
-				onRequestClose={() => {
-					if (levelUp) {
-						setTimeout(() => {
-							setShowLevelUp(true);
-						}, 1000);
-					}
+					const { sound } = await Audio.Sound.createAsync(
+						require("../assets/sfx/replay.wav")
+					);
+					setSound(sound);
+					await sound.playAsync();
+					Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 					setComplete(false);
 				}}
 				style={{ margin: 0 }}
@@ -1626,17 +1665,6 @@ export default function Number(storedLevel: string) {
 											setComplete(true);
 										}
 									} else if (attempt == 3) {
-										generateRandomNumber(level, minLimit);
-										setRoboFeedback(
-											`I am thinking of a new number between ${minLimit} to ${
-												level * 10
-											}, Now guess the number.`
-										);
-										setAttempt(1);
-										setHintsAvailable(2);
-										setFirstHint("");
-										setSecondHint("");
-										setGuess("");
 										const { sound } = await Audio.Sound.createAsync(
 											require("../assets/sfx/gameOver.mp3")
 										);
