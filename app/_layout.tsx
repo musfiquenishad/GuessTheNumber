@@ -1,59 +1,41 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { Stack } from "expo-router";
+import "../global.css";
 SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
-  });
+	const [loaded, error] = useFonts({
+		petitCochon: require("../assets/fonts/Petit-Cochon.ttf"),
+		handjet: require("../assets/fonts/Handjet.ttf"),
+		handjetLight: require("../assets/fonts/Handjet-Light.ttf"),
+		handjetMedium: require("../assets/fonts/Handjet-Medium.ttf"),
+		handjetSemibold: require("../assets/fonts/Handjet-SemiBold.ttf"),
+		handjetBold: require("../assets/fonts/Handjet-Bold.ttf"),
+	});
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+	useEffect(() => {
+		if (loaded || error) {
+			SplashScreen.hideAsync();
+		}
+	}, [loaded, error]);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+	if (!loaded && !error) {
+		return null;
+	}
 
-  if (!loaded) {
-    return null;
-  }
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
-  );
+	return (
+		<Stack
+			screenOptions={{
+				headerShown: false,
+			}}
+		>
+			{/* Optionally configure static options outside the route.*/}
+			<Stack.Screen name="index" />
+			<Stack.Screen name="number" />
+			<Stack.Screen name="sequence" />
+			<Stack.Screen name="sum" />
+			<Stack.Screen name="leaderboard" />
+		</Stack>
+	);
 }
