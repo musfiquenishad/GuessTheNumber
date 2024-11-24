@@ -17,30 +17,22 @@ import * as Haptics from "expo-haptics";
 import BackgroundMusic from "@/components/BackgroundMusic";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// const generateSequence = (level: number) => {
-// 	const length = 5; // Fixed sequence length
-// 	const start = Math.floor(Math.random() * (10 + level * 5)) + 10; // Start number becomes harder with level
-// 	const step = Math.floor(Math.random() * (5 + level * 3)) + 5; // Step size increases more aggressively with level
-// 	const sequence: (number | null)[] = [];
-
-// 	for (let i = 0; i < length; i++) {
-// 		sequence.push(start + i * step);
-// 	}
-
-// 	const missingIndex = Math.floor(Math.random() * length);
-// 	const missingNumber = sequence[missingIndex];
-// 	sequence[missingIndex] = null;
-
-// 	return { sequence, missingNumber };
-// };
-const generateSequence = (level: number) => {
+const generateSequence = (level: number, xp: number) => {
 	const length = 5; // Fixed sequence length
 
-	// Start number with randomness, slightly scaling with level
-	const start = Math.floor(Math.random() * 10) + 10 + Math.floor(level / 2);
+	// Increase difficulty gradually with XP (XP-based scaling)
+	const xpMultiplier = Math.floor(xp / 500); // For every 500 XP, increase difficulty slightly
 
-	// Step size varies with level, can be odd or even
-	const step = Math.floor(Math.random() * 4) + 3 + Math.floor(level / 3);
+	// Adjust the start number with more influence from XP and level, ensuring it's an integer
+	const start =
+		Math.floor(Math.random() * 10) + 10 + Math.floor(level / 2) + xpMultiplier;
+
+	// Scale the step size much more significantly with level (increase step rate dramatically), ensuring it's an integer
+	const step =
+		Math.floor(Math.random() * 4) +
+		3 +
+		Math.floor(level / 2) +
+		Math.floor(Math.pow(level / 2, 1.5));
 
 	// Randomly make start or step odd/even
 	const makeOddOrEven = (num: number) => (Math.random() > 0.5 ? num : num + 1);
@@ -132,13 +124,7 @@ export default function Sequence() {
 			if (newXp >= 5000) {
 				setLevel((prevLevel) => prevLevel + 1);
 				setLevelUp(true);
-				const { sequence, missingNumber } = generateSequence(level);
-				setSequence(sequence);
-				setMissingNumber(missingNumber);
-				setRoboFeedback(
-					"Analyze the sequence and guess the missing number to unlock the lock on the treasure box."
-				);
-				setAttempt(1);
+
 				return 0;
 			}
 
@@ -211,7 +197,7 @@ export default function Sequence() {
 					transparent={true}
 					visible={showStory}
 					onRequestClose={() => {
-						const { sequence, missingNumber } = generateSequence(level);
+						const { sequence, missingNumber } = generateSequence(level, xp);
 						setSequence(sequence);
 						setMissingNumber(missingNumber);
 						setRoboFeedback(
@@ -288,7 +274,10 @@ export default function Sequence() {
 								activeOpacity={0.6}
 								underlayColor={"#f97316"}
 								onPress={() => {
-									const { sequence, missingNumber } = generateSequence(level);
+									const { sequence, missingNumber } = generateSequence(
+										level,
+										xp
+									);
 									setSequence(sequence);
 									setMissingNumber(missingNumber);
 									setRoboFeedback(
@@ -330,7 +319,7 @@ export default function Sequence() {
 								setShowLevelUp(true);
 							}, 1000);
 						}
-						const { sequence, missingNumber } = generateSequence(level);
+						const { sequence, missingNumber } = generateSequence(level, xp);
 						setSequence(sequence);
 						setMissingNumber(missingNumber);
 						setRoboFeedback(
@@ -497,7 +486,10 @@ export default function Sequence() {
 												setShowLevelUp(true);
 											}, 1000);
 										}
-										const { sequence, missingNumber } = generateSequence(level);
+										const { sequence, missingNumber } = generateSequence(
+											level,
+											xp
+										);
 										setSequence(sequence);
 										setMissingNumber(missingNumber);
 										setRoboFeedback(
@@ -550,7 +542,7 @@ export default function Sequence() {
 								setShowLevelUp(true);
 							}, 1000);
 						}
-						const { sequence, missingNumber } = generateSequence(level);
+						const { sequence, missingNumber } = generateSequence(level, xp);
 						setSequence(sequence);
 						setMissingNumber(missingNumber);
 						setRoboFeedback(
@@ -668,7 +660,10 @@ export default function Sequence() {
 									activeOpacity={0.6}
 									underlayColor={"#a3e635"}
 									onPress={async () => {
-										const { sequence, missingNumber } = generateSequence(level);
+										const { sequence, missingNumber } = generateSequence(
+											level,
+											xp
+										);
 										setSequence(sequence);
 										setMissingNumber(missingNumber);
 										setRoboFeedback(
@@ -726,7 +721,7 @@ export default function Sequence() {
 						await sound.playAsync();
 					}}
 					onRequestClose={async () => {
-						const { sequence, missingNumber } = generateSequence(level);
+						const { sequence, missingNumber } = generateSequence(level, xp);
 						setSequence(sequence);
 						setMissingNumber(missingNumber);
 						setRoboFeedback(
@@ -796,7 +791,8 @@ export default function Sequence() {
 									}}
 									className="text-3xl text-lime-950 text-center px-5 p-4"
 								>
-									In this level you will guess more hard sequence.
+									In this level, the sequences will become progressively more
+									challenging.
 								</Text>
 							</View>
 
@@ -968,7 +964,7 @@ export default function Sequence() {
 							Haptics.notificationAsync(
 								Haptics.NotificationFeedbackType.Warning
 							);
-							const { sequence, missingNumber } = generateSequence(level);
+							const { sequence, missingNumber } = generateSequence(level, xp);
 							setSequence(sequence);
 							setMissingNumber(missingNumber);
 							setRoboFeedback(

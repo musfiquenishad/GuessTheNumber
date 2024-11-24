@@ -17,7 +17,7 @@ const BackgroundMusic = () => {
 		);
 		sound.current = loadedSound;
 
-		await sound.current.setVolumeAsync(0.2); // Set lower volume
+		await sound.current.setVolumeAsync(0.1); // Set lower volume
 		await sound.current.playAsync(); // Start playing the music
 		await sound.current.setIsLoopingAsync(true); // Loop the music
 	};
