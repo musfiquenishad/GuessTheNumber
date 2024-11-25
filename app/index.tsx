@@ -19,6 +19,7 @@ export default function Index() {
 	const [coins, setCoins] = useState<number>(0);
 	const [guessNumberLevel, setGuessNumberLevel] = useState<number>(1);
 	const [guessSequenceLevel, setGuessSequenceLevel] = useState<number>(1);
+	const [guessEquationLevel, setGuessEquationLevel] = useState<number>(1);
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -26,6 +27,9 @@ export default function Index() {
 				const guessNumberLevel = await AsyncStorage.getItem("guessNumberLevel");
 				const guessSequenceLevel = await AsyncStorage.getItem(
 					"guessSequenceLevel"
+				);
+				const guessEquationLevel = await AsyncStorage.getItem(
+					"guessEquationLevel"
 				);
 				const storedCoins = await AsyncStorage.getItem("coins");
 
@@ -35,6 +39,9 @@ export default function Index() {
 				);
 				setGuessSequenceLevel(
 					guessSequenceLevel ? parseInt(guessSequenceLevel, 10) : 1
+				);
+				setGuessEquationLevel(
+					guessEquationLevel ? parseInt(guessEquationLevel, 10) : 1
 				);
 				setCoins(storedCoins ? parseInt(storedCoins, 10) : 0);
 			} catch (error) {
@@ -274,7 +281,7 @@ export default function Index() {
 					</View>
 				</View>
 
-				{/* Guess Sum Button */}
+				{/* Guess Equation Button */}
 				<View
 					style={{ width: 320 }}
 					className="mt-5 flex flex-row justify-between items-center self-center"
@@ -282,7 +289,7 @@ export default function Index() {
 					<TouchableHighlight
 						activeOpacity={0.6}
 						underlayColor={"transparent"}
-						onPress={() => router.push("/sum")}
+						onPress={() => router.push("/equation")}
 					>
 						<View
 							className="rounded-lg"
@@ -308,7 +315,7 @@ export default function Index() {
 									style={{ fontFamily: "handjetMedium" }}
 									className="text-2xl text-yellow-950 pl-3"
 								>
-									Guess Sum
+									Guess Equation
 								</Text>
 							</View>
 
@@ -320,7 +327,7 @@ export default function Index() {
 									style={{ fontFamily: "handjet" }}
 									className="text-center text-xl text-yellow-950"
 								>
-									Level 1
+									Level {guessEquationLevel}
 								</Text>
 							</View>
 						</View>

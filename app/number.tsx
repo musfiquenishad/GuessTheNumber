@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import BackgroundMusic from "@/components/BackgroundMusic";
-export default function Number(storedLevel: string) {
+export default function Number() {
 	const router = useRouter();
 	const [sound, setSound] = useState<Audio.Sound | null>(null);
 
@@ -1224,7 +1224,6 @@ export default function Number(storedLevel: string) {
 				)}
 
 				{/* Keyboard */}
-
 				{showNumberPad && (
 					<View
 						style={{
@@ -1625,7 +1624,7 @@ export default function Number(storedLevel: string) {
 											addCoins(500 * level);
 
 											const { sound } = await Audio.Sound.createAsync(
-												require("../assets/sfx/win.mp3")
+												require("../assets/sfx/win2.wav")
 											);
 											setSound(sound);
 											await sound.playAsync();
@@ -1640,7 +1639,7 @@ export default function Number(storedLevel: string) {
 											addCoins(250 * level);
 
 											const { sound } = await Audio.Sound.createAsync(
-												require("../assets/sfx/win.mp3")
+												require("../assets/sfx/win2.wav")
 											);
 											setSound(sound);
 											await sound.playAsync();
@@ -1654,7 +1653,7 @@ export default function Number(storedLevel: string) {
 											addCoins(125 * level);
 
 											const { sound } = await Audio.Sound.createAsync(
-												require("../assets/sfx/win.mp3")
+												require("../assets/sfx/win2.wav")
 											);
 											setSound(sound);
 											await sound.playAsync();

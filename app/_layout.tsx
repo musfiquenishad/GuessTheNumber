@@ -34,7 +34,7 @@ export default function RootLayout() {
 			<Stack.Screen name="index" />
 			<Stack.Screen name="number" />
 			<Stack.Screen name="sequence" />
-			<Stack.Screen name="sum" />
+			<Stack.Screen name="equation" />
 			<Stack.Screen name="leaderboard" />
 		</Stack>
 	);

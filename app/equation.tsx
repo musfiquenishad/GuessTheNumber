@@ -1,86 +1,126 @@
 import {
+	SafeAreaView,
 	Text,
 	View,
-	SafeAreaView,
 	Platform,
 	TouchableHighlight,
 	Modal,
+	Pressable,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import * as Progress from "react-native-progress";
-import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { Audio } from "expo-av";
+import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import BackgroundMusic from "@/components/BackgroundMusic";
+import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import BackgroundMusic from "@/components/BackgroundMusic";
 
-const generateSequence = (level: number, xp: number) => {
-	const length = 5; // Fixed sequence length
+// // Function to generate equations with context
+// const generateEquation = (level: number) => {
+// 	const maxNumber = level * 5 + 10; // Level affects the number range
+// 	const A = Math.floor(Math.random() * maxNumber) + 1;
+// 	const B = Math.floor(Math.random() * maxNumber) + 1;
 
-	// Increase difficulty gradually with XP (XP-based scaling)
-	const xpMultiplier = Math.floor(xp / 500); // For every 500 XP, increase difficulty slightly
+// 	const equationSet = [
+// 		{ question: `A = ${A}\nA + B = ${A + B}\nB = `, answer: B },
+// 		{ question: `A = ${A}\nA - B = ${A - B}\nB = `, answer: B },
+// 		{ question: `A = ${A}\nB = ${B}\nA + B = `, answer: A + B },
+// 		{ question: `A = ${A}\nB = ${B}\nA - B = `, answer: A - B },
+// 		{ question: `A = ${A}\nB = ${B}\nA * B = `, answer: A * B },
+// 		{
+// 			question: `A = ${A * B}\nB = ${B}\nA / B = `,
+// 			answer: Math.floor((A * B) / B),
+// 		},
+// 	];
 
-	// Adjust the start number with more influence from XP and level, ensuring it's an integer
-	const start =
-		Math.floor(Math.random() * 10) + 10 + Math.floor(level / 2) + xpMultiplier;
+// 	// Randomly pick one equation
+// 	const randomEquation =
+// 		equationSet[Math.floor(Math.random() * equationSet.length)];
+// 	return randomEquation;
+// };
 
-	// Scale the step size much more significantly with level (increase step rate dramatically), ensuring it's an integer
-	const step =
-		Math.floor(Math.random() * 4) +
-		3 +
-		Math.floor(level / 2) +
-		Math.floor(Math.pow(level / 2, 1.5));
+// Function to generate equations with context
+const generateEquation = (level: number) => {
+	// Level affects the number range
+	const maxNumber = level * 5 + 10;
 
-	// Randomly make start or step odd/even
-	const makeOddOrEven = (num: number) => (Math.random() > 0.5 ? num : num + 1);
-	const adjustedStart = makeOddOrEven(start);
-	const adjustedStep = makeOddOrEven(step);
+	// Generate random values for A and B
+	const A = Math.floor(Math.random() * maxNumber) + 1;
+	const B = Math.floor(Math.random() * maxNumber) + 1;
 
-	const sequence: (number | null)[] = [];
+	const equationSet = [
+		{ question: `A = ${A}\nA + B = ${A + B}\nB = `, answer: B }, // A + B = ?
+		{ question: `A = ${A}\nA - B = ${A - B}\nB = `, answer: B }, // A - B = ?
+		{ question: `A = ${A}\nB = ${B}\nA + B = `, answer: A + B }, // A + B = ?
+		{ question: `A = ${A}\nB = ${B}\nA - B = `, answer: A - B }, // A - B = ?
+		{ question: `A = ${A}\nB = ${B}\nA * B = `, answer: A * B }, // A * B = ?
+		{
+			question: `A = ${A * B}\nB = ${B}\nA / B = `,
+			answer: (A * B) / B, // A * B / B = A
+		}, // A / B = ?
+		{
+			question: `A = ${A}\nB = ${B}\n(A + B) * 2 = `,
+			answer: (A + B) * 2, // (A + B) * 2 = ?
+		}, // (A + B) * 2 = ?
+		{
+			question: `A = ${A}\nB = ${B}\n(A * B) - 5 = `,
+			answer: A * B - 5, // (A * B) - 5 = ?
+		}, // (A * B) - 5 = ?
+		{
+			question: `A = ${A}\nB = ${B}\n(A + B) / 2 = `,
+			answer: (A + B) / 2, // (A + B) / 2 = ?
+		}, // (A + B) / 2 = ?
+		{
+			question: `A = ${A}\nB = ${B}\n(A * B) + (A + B) = `,
+			answer: A * B + (A + B), // (A * B) + (A + B) = ?
+		}, // (A * B) + (A + B) = ?
+	];
 
-	// Generate the sequence
-	for (let i = 0; i < length; i++) {
-		sequence.push(adjustedStart + i * adjustedStep);
-	}
+	// Randomly pick one equation
+	const randomEquation =
+		equationSet[Math.floor(Math.random() * equationSet.length)];
 
-	// Randomly pick a number to be "missing"
-	const missingIndex = Math.floor(Math.random() * length);
-	const missingNumber = sequence[missingIndex];
-	sequence[missingIndex] = null;
-
-	return { sequence, missingNumber };
+	return randomEquation;
 };
 
-export default function Sequence() {
+const GuessEquation = () => {
 	const router = useRouter();
 	const [sound, setSound] = useState<Audio.Sound | null>(null);
-	const [level, setLevel] = useState(1);
-	const [xp, setXp] = useState(0);
-	const [xpEarned, setXpEarned] = useState(0);
-	const [coins, setCoins] = useState(0);
+
+	const [roboFeedback, setRoboFeedback] = useState("");
+	const [minLimit, setMinLimit] = useState(1);
+	const [randomNumber, setRandomNumber] = useState<number>(0);
+	const [question, setQuestion] = useState("");
+	const [questionAnswer, setQuestionAnswer] = useState<number>(0);
+	const [level, setLevel] = useState<number>(1);
+	const [coins, setCoins] = useState<number>(0);
 	const [coinsEarned, setCoinsEarned] = useState(0);
+	const [xp, setXp] = useState<number>(0);
+	const [xpEarned, setXpEarned] = useState(0);
 	const [attempt, setAttempt] = useState(1);
-	const [sequence, setSequence] = useState<(number | null)[]>([]);
-	const [missingNumber, setMissingNumber] = useState<number | null>(null); // Store the missing number
-	const [guess, setGuess] = useState<string>("");
-	const [showStory, setShowStory] = useState<boolean>(false);
-	const [roboFeedback, setRoboFeedback] = useState<string>("");
+	const [guess, setGuess] = useState("");
+
+	const [showStory, setShowStory] = useState(false);
 	const [complete, setComplete] = useState(false);
 	const [gameOver, setGameOver] = useState(false);
-	const [levelUp, setLevelUp] = useState(false);
+	const [levelUp, setLevelUp] = useState<boolean>(false);
 	const [showLevelUp, setShowLevelUp] = useState(false);
-
 	const [showRoboFeedback, setShowRoboFeedback] = useState(false);
 	const [showInputBox, setShowInputBox] = useState(false);
 	const [showNumberPad, setShowNumberPad] = useState(false);
 
+	const [hintsAvailable, setHintsAvailable] = useState(2);
+	const [showHint, setShowHint] = useState<boolean>(false);
+	const [firstHint, setFirstHint] = useState("");
+	const [secondHint, setSecondHint] = useState("");
+
 	// AsyncStorage keys
-	const LEVEL_KEY = "guessSequenceLevel";
+	const LEVEL_KEY = "guessEquationLevel";
 	const COINS_KEY = "coins";
-	const XP_KEY = "guessSequenceXp";
+	const XP_KEY = "guessEquationXp";
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -137,24 +177,15 @@ export default function Sequence() {
 		setCoins((prevCoins) => prevCoins + amount);
 	};
 
-	const appendNumber = (number: number) => {
+	const appendNumber = (number: number | string) => {
+		// Directly append the input to the guess, regardless of the type
 		if (guess.length < 3) {
 			setGuess((prev) => prev + number.toString());
 		}
 	};
+
 	const deleteLastNumber = (): void => {
 		setGuess((prevNumber) => prevNumber.slice(0, -1));
-	};
-
-	const removeData = async () => {
-		try {
-			await AsyncStorage.removeItem("coins");
-			await AsyncStorage.removeItem("guessSequenceLevel");
-			await AsyncStorage.removeItem("guessSequenceXp");
-			console.log("Removed: Coins, Level, and Xp.");
-		} catch (exception) {
-			return false;
-		}
 	};
 
 	useEffect(() => {
@@ -162,7 +193,7 @@ export default function Sequence() {
 			setShowStory(true);
 		}, 600);
 
-		return () => clearTimeout(timer);
+		return () => clearTimeout(timer); // Cleanup timeout
 	}, []);
 
 	useEffect(() => {
@@ -197,11 +228,13 @@ export default function Sequence() {
 					transparent={true}
 					visible={showStory}
 					onRequestClose={() => {
-						const { sequence, missingNumber } = generateSequence(level, xp);
-						setSequence(sequence);
-						setMissingNumber(missingNumber);
+						setShowStory(false);
+
+						const { question, answer } = generateEquation(level);
+						setQuestion(question);
+						setQuestionAnswer(answer);
 						setRoboFeedback(
-							"Analyze the sequence and guess the missing number to unlock the lock on the treasure box."
+							"Below is a math puzzle. Analyze the equation, solve it, and type your answer in the box."
 						);
 						setTimeout(() => {
 							setShowRoboFeedback(true);
@@ -212,7 +245,6 @@ export default function Sequence() {
 						setTimeout(() => {
 							setShowNumberPad(true);
 						}, 3000);
-						setShowStory(false);
 					}}
 					style={{ margin: 0 }}
 				>
@@ -228,7 +260,7 @@ export default function Sequence() {
 							style={{
 								width: 340,
 								padding: 20,
-								backgroundColor: "#fff7ed",
+								backgroundColor: "#f7fee7",
 								borderRadius: 40,
 								alignItems: "center",
 								shadowColor: "#000",
@@ -237,9 +269,9 @@ export default function Sequence() {
 								shadowRadius: 4,
 								elevation: 5,
 							}}
-							className="border-4 border-b-8 border-t-8 border-orange-900 p-3"
+							className="border-4 border-b-8 border-t-8 border-lime-900 p-3"
 						>
-							<View className="px-5 py-2 bg-orange-900 rounded-3xl -mt-12 border-4 border-gray-100">
+							<View className="px-5 py-2 bg-lime-900 rounded-3xl -mt-12 border-4 border-gray-100">
 								<Text
 									style={{ fontFamily: "petitCochon" }}
 									className="text-2xl text-gray-50 pt-2"
@@ -248,13 +280,13 @@ export default function Sequence() {
 								</Text>
 							</View>
 
-							<View className="bg-orange-200 p-4 mt-5 rounded-xl">
+							<View className="bg-lime-200 p-2 mt-5 rounded-xl">
 								<Image
 									style={{
-										width: 120,
+										width: 100,
 										height: 100,
 									}}
-									source={require("../assets/images/treasure.svg")}
+									source={require("../assets/images/boltLime.svg")}
 									contentFit="contain"
 								/>
 							</View>
@@ -262,26 +294,23 @@ export default function Sequence() {
 							<View className="p-2 mt-4">
 								<Text
 									style={{ fontFamily: "handjetMedium" }}
-									className="text-2xl text-orange-950 text-center"
+									className="text-2xl text-lime-900 text-center"
 								>
-									A treasure chest is locked with a special code, but one number
-									in the sequence is missing. Use the pattern in the sequence to
-									find the missing number and unlock the treasure!
+									A clever robot named Bolt has created a tricky equation and is
+									challenging you to solve it. Analyze the equation carefully
+									and find the missing number.
 								</Text>
 							</View>
 
 							<TouchableHighlight
 								activeOpacity={0.6}
-								underlayColor={"#f97316"}
+								underlayColor={"#a3e635"}
 								onPress={() => {
-									const { sequence, missingNumber } = generateSequence(
-										level,
-										xp
-									);
-									setSequence(sequence);
-									setMissingNumber(missingNumber);
+									const { question, answer } = generateEquation(level);
+									setQuestion(question);
+									setQuestionAnswer(answer);
 									setRoboFeedback(
-										"Analyze the sequence and guess the missing number to unlock the lock on the treasure box."
+										"Below is a math puzzle. Analyze the equation, solve it, and type your answer in the box."
 									);
 									setTimeout(() => {
 										setShowRoboFeedback(true);
@@ -294,15 +323,332 @@ export default function Sequence() {
 									}, 3000);
 									setShowStory(false);
 								}}
-								className="bg-orange-600 px-24 py-3 flex items-center justify-center rounded-2xl mt-14 mb-5"
+								className="bg-lime-500 px-24 py-3 flex items-center justify-center rounded-2xl mt-14 mb-5"
 							>
 								<Text
 									style={{ fontFamily: "petitCochon" }}
-									className="text-2xl text-orange-900 mt-2"
+									className="text-2xl text-lime-900 mt-2"
 								>
 									LET'S PLAY
 								</Text>
 							</TouchableHighlight>
+						</View>
+					</View>
+				</Modal>
+
+				{/* Game over modal */}
+				<Modal
+					statusBarTranslucent={true}
+					animationType="fade"
+					transparent={true}
+					visible={gameOver}
+					onRequestClose={async () => {
+						const { sound } = await Audio.Sound.createAsync(
+							require("../assets/sfx/replay.wav")
+						);
+						setSound(sound);
+						await sound.playAsync();
+						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+						const { question, answer } = generateEquation(level);
+						setQuestion(question);
+						setQuestionAnswer(answer);
+						setRoboFeedback(
+							"Below is a new math puzzle. Analyze the equation, solve it, and type your answer in the box."
+						);
+						setAttempt(1);
+						setGuess("");
+						setAttempt(1);
+
+						setGameOver(false);
+					}}
+					style={{ margin: 0 }}
+				>
+					<View
+						style={{
+							flex: 1,
+							justifyContent: "center",
+							alignItems: "center",
+							backgroundColor: "rgba(0, 0, 0, 0.7)",
+						}}
+					>
+						<View
+							style={{
+								width: 340,
+								padding: 20,
+
+								alignItems: "center",
+								shadowColor: "#000",
+								borderRadius: 50,
+								shadowOffset: { width: 0, height: 2 },
+								shadowOpacity: 0.25,
+								shadowRadius: 4,
+								elevation: 5,
+							}}
+							className="bg-amber-50 border-4 border-b-8 border-t-8 border-amber-950"
+						>
+							{/* Header */}
+							<View style={{ marginBottom: 0, alignItems: "center" }}>
+								<Image
+									style={{
+										width: 300,
+										height: 80,
+										marginTop: 10,
+									}}
+									source={require("../assets/images/gameOver.svg")}
+									contentFit="contain"
+								/>
+								<Text
+									style={{
+										fontFamily: "handjetMedium",
+									}}
+									className="text-3xl text-amber-950 text-center px-5 p-4"
+								>
+									You have to guess the number in three attempt. The correct
+									number was:
+								</Text>
+							</View>
+
+							{/* Body */}
+							<View style={{ marginBottom: 20, alignItems: "center" }}>
+								<Text
+									style={{
+										fontFamily: "handjetMedium",
+									}}
+									className="text-6xl text-amber-950 text-center px-5 p-4"
+								>
+									{questionAnswer}
+								</Text>
+							</View>
+
+							{/* Footer with Buttons */}
+							<View
+								style={{
+									flexDirection: "row",
+									justifyContent: "space-evenly",
+									width: "100%",
+									marginBottom: 10,
+								}}
+							>
+								{/* Home Button (Secondary with border) */}
+								<TouchableHighlight
+									activeOpacity={0.6}
+									underlayColor={"transparent"}
+									onPress={() => {
+										setGameOver(false);
+										router.push("/");
+									}}
+									style={{
+										borderWidth: 2,
+
+										paddingVertical: 12,
+										paddingHorizontal: 20,
+
+										justifyContent: "center",
+										alignItems: "center",
+									}}
+									className="border-2 border-amber-700 rounded-lg"
+								>
+									<Text
+										style={{
+											fontFamily: "petitCochon",
+											fontSize: 18,
+										}}
+										className="text-amber-700"
+									>
+										{"<"} HOME
+									</Text>
+								</TouchableHighlight>
+
+								{/* Next Button (CTA with larger width) */}
+								<TouchableHighlight
+									activeOpacity={0.6}
+									underlayColor={"#a3e635"}
+									onPress={async () => {
+										const { sound } = await Audio.Sound.createAsync(
+											require("../assets/sfx/replay.wav")
+										);
+										setSound(sound);
+										await sound.playAsync();
+										Haptics.notificationAsync(
+											Haptics.NotificationFeedbackType.Warning
+										);
+										const { question, answer } = generateEquation(level);
+										setQuestion(question);
+										setQuestionAnswer(answer);
+										setRoboFeedback(
+											"Below is a new math puzzle. Analyze the equation, solve it, and type your answer in the box."
+										);
+										setGuess("");
+										setAttempt(1);
+
+										setGameOver(false);
+									}}
+									style={{
+										paddingVertical: 12,
+										paddingHorizontal: 30,
+
+										justifyContent: "center",
+										alignItems: "center",
+										minWidth: 150,
+									}}
+									className="bg-lime-600 rounded-lg"
+								>
+									<Text
+										style={{
+											fontFamily: "petitCochon",
+											fontSize: 18,
+										}}
+										className="text-lime-900 flex-row text-center items-center"
+									>
+										PLAY AGAIN {">"}
+									</Text>
+								</TouchableHighlight>
+							</View>
+						</View>
+					</View>
+				</Modal>
+
+				{/* Level Up modal */}
+				<Modal
+					statusBarTranslucent={true}
+					animationType="fade"
+					transparent={true}
+					visible={showLevelUp}
+					onShow={async () => {
+						const { sound } = await Audio.Sound.createAsync(
+							require("../assets/sfx/levelUp2.wav")
+						);
+						setSound(sound);
+						await sound.playAsync();
+					}}
+					onRequestClose={async () => {
+						const { sound } = await Audio.Sound.createAsync(
+							require("../assets/sfx/replay.wav")
+						);
+						setSound(sound);
+						await sound.playAsync();
+						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+						const { question, answer } = generateEquation(level);
+						setQuestion(question);
+						setQuestionAnswer(answer);
+						setRoboFeedback(
+							"Below is a new math puzzle. Analyze the equation, solve it, and type your answer in the box."
+						);
+						setAttempt(1);
+
+						setLevelUp(false);
+						setShowLevelUp(false);
+					}}
+					style={{ margin: 0 }}
+				>
+					<View
+						style={{
+							flex: 1,
+							justifyContent: "center",
+							alignItems: "center",
+							backgroundColor: "rgba(0, 0, 0, 0.7)",
+						}}
+					>
+						<View
+							style={{
+								width: 340,
+								padding: 20,
+
+								alignItems: "center",
+								shadowColor: "#000",
+								borderRadius: 50,
+								shadowOffset: { width: 0, height: 2 },
+								shadowOpacity: 0.25,
+								shadowRadius: 4,
+								elevation: 5,
+							}}
+							className="bg-lime-50 border-4 border-b-8 border-t-8 border-lime-800"
+						>
+							{/* Header */}
+							<View style={{ marginBottom: 0, alignItems: "center" }}>
+								<Image
+									style={{
+										width: 340,
+										height: 300,
+										marginTop: -200,
+									}}
+									source={require("../assets/images/levelUp.svg")}
+									contentFit="contain"
+								/>
+								<Text
+									style={{
+										fontFamily: "handjetBold",
+									}}
+									className="text-9xl text-lime-950 text-center"
+								>
+									{level}
+								</Text>
+							</View>
+
+							{/* Body */}
+							<View style={{ marginBottom: 20, alignItems: "center" }}>
+								<Text
+									style={{
+										fontFamily: "handjetMedium",
+									}}
+									className="text-3xl text-lime-950 text-center px-5 p-4"
+								>
+									You've impressed Bolt by solving equations like a pro. The
+									challenge just got tougher as you level up
+								</Text>
+							</View>
+
+							{/* Footer with Buttons */}
+							<View
+								style={{
+									flexDirection: "row",
+									justifyContent: "space-evenly",
+									width: "100%",
+									marginBottom: 10,
+								}}
+							>
+								<TouchableHighlight
+									activeOpacity={0.6}
+									underlayColor={"#84cc16"}
+									onPress={async () => {
+										const { question, answer } = generateEquation(level);
+										setQuestion(question);
+										setQuestionAnswer(answer);
+										setRoboFeedback(
+											"Below is a new math puzzle. Analyze the equation, solve it, and type your answer in the box."
+										);
+										setLevelUp(false);
+										setShowLevelUp(false);
+										const { sound } = await Audio.Sound.createAsync(
+											require("../assets/sfx/replay.wav")
+										);
+										setSound(sound);
+										await sound.playAsync();
+										Haptics.notificationAsync(
+											Haptics.NotificationFeedbackType.Warning
+										);
+									}}
+									style={{
+										paddingVertical: 12,
+										paddingHorizontal: 30,
+
+										justifyContent: "center",
+										alignItems: "center",
+										minWidth: 150,
+									}}
+									className="bg-lime-600 rounded-lg"
+								>
+									<Text
+										style={{
+											fontFamily: "petitCochon",
+											fontSize: 18,
+										}}
+										className="text-lime-900 flex-row text-center items-center"
+									>
+										WOO-HOO{"  >"}
+									</Text>
+								</TouchableHighlight>
+							</View>
 						</View>
 					</View>
 				</Modal>
@@ -319,19 +665,20 @@ export default function Sequence() {
 								setShowLevelUp(true);
 							}, 1000);
 						}
-						const { sequence, missingNumber } = generateSequence(level, xp);
-						setSequence(sequence);
-						setMissingNumber(missingNumber);
+						const { question, answer } = generateEquation(level);
+						setQuestion(question);
+						setQuestionAnswer(answer);
 						setRoboFeedback(
-							"Here is a new sequence, Guess the missing number to unlock the treasure box."
+							"Below is a new math puzzle. Analyze the equation, solve it, and type your answer in the box."
 						);
+						setAttempt(1);
+
 						const { sound } = await Audio.Sound.createAsync(
 							require("../assets/sfx/replay.wav")
 						);
 						setSound(sound);
 						await sound.playAsync();
 						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-						setAttempt(1);
 						setComplete(false);
 					}}
 					style={{ margin: 0 }}
@@ -376,22 +723,12 @@ export default function Sequence() {
 									}}
 									className="text-3xl text-lime-950 text-center px-5 p-4"
 								>
-									Sequence complete in {attempt} attempts, Treasure unlocked.
+									You've cracked the equation in just {attempt} attempt
 								</Text>
 							</View>
 
 							{/* Body */}
 							<View style={{ marginBottom: 50, alignItems: "center" }}>
-								<View className="self-center mb-3">
-									<Image
-										style={{
-											width: 150,
-											height: 130,
-										}}
-										source={require("../assets/images/treasureOpen.svg")}
-										contentFit="contain"
-									/>
-								</View>
 								<Text
 									style={{
 										fontFamily: "handjetMedium",
@@ -486,15 +823,7 @@ export default function Sequence() {
 												setShowLevelUp(true);
 											}, 1000);
 										}
-										const { sequence, missingNumber } = generateSequence(
-											level,
-											xp
-										);
-										setSequence(sequence);
-										setMissingNumber(missingNumber);
-										setRoboFeedback(
-											"Here is a new sequence, Guess the missing number to unlock the treasure box."
-										);
+
 										const { sound } = await Audio.Sound.createAsync(
 											require("../assets/sfx/replay.wav")
 										);
@@ -502,6 +831,12 @@ export default function Sequence() {
 										await sound.playAsync();
 										Haptics.notificationAsync(
 											Haptics.NotificationFeedbackType.Warning
+										);
+										const { question, answer } = generateEquation(level);
+										setQuestion(question);
+										setQuestionAnswer(answer);
+										setRoboFeedback(
+											"Below is a new math puzzle. Analyze the equation, solve it, and type your answer in the box."
 										);
 										setAttempt(1);
 										setComplete(false);
@@ -530,323 +865,8 @@ export default function Sequence() {
 						</View>
 					</View>
 				</Modal>
-				{/* Game over modal */}
-				<Modal
-					statusBarTranslucent={true}
-					animationType="fade"
-					transparent={true}
-					visible={gameOver}
-					onRequestClose={async () => {
-						if (levelUp) {
-							setTimeout(() => {
-								setShowLevelUp(true);
-							}, 1000);
-						}
-						const { sequence, missingNumber } = generateSequence(level, xp);
-						setSequence(sequence);
-						setMissingNumber(missingNumber);
-						setRoboFeedback(
-							"Here is a new sequence, Guess the missing number to unlock the treasure box."
-						);
-						const { sound } = await Audio.Sound.createAsync(
-							require("../assets/sfx/replay.wav")
-						);
-						setSound(sound);
-						await sound.playAsync();
-						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-						setAttempt(1);
-						setGameOver(false);
-					}}
-					style={{ margin: 0 }}
-				>
-					<View
-						style={{
-							flex: 1,
-							justifyContent: "center",
-							alignItems: "center",
-							backgroundColor: "rgba(0, 0, 0, 0.7)",
-						}}
-					>
-						<View
-							style={{
-								width: 340,
-								padding: 20,
-
-								alignItems: "center",
-								shadowColor: "#000",
-								borderRadius: 50,
-								shadowOffset: { width: 0, height: 2 },
-								shadowOpacity: 0.25,
-								shadowRadius: 4,
-								elevation: 5,
-							}}
-							className="bg-amber-50 border-4 border-b-8 border-t-8 border-amber-950"
-						>
-							{/* Header */}
-							<View style={{ marginBottom: 0, alignItems: "center" }}>
-								<Image
-									style={{
-										width: 300,
-										height: 80,
-										marginTop: 10,
-									}}
-									source={require("../assets/images/gameOver.svg")}
-									contentFit="contain"
-								/>
-								<Text
-									style={{
-										fontFamily: "handjetMedium",
-									}}
-									className="text-3xl text-amber-950 text-center px-5 p-4"
-								>
-									You have to guess the number in three attempt. The correct
-									number was:
-								</Text>
-							</View>
-
-							{/* Body */}
-							<View style={{ marginBottom: 20, alignItems: "center" }}>
-								<Text
-									style={{
-										fontFamily: "handjetMedium",
-									}}
-									className="text-6xl text-amber-950 text-center px-5 p-4"
-								>
-									{missingNumber}
-								</Text>
-							</View>
-
-							{/* Footer with Buttons */}
-							<View
-								style={{
-									flexDirection: "row",
-									justifyContent: "space-evenly",
-									width: "100%",
-									marginBottom: 10,
-								}}
-							>
-								{/* Home Button (Secondary with border) */}
-								<TouchableHighlight
-									activeOpacity={0.6}
-									underlayColor={"transparent"}
-									onPress={() => {
-										setGameOver(false);
-										router.push("/");
-									}}
-									style={{
-										borderWidth: 2,
-
-										paddingVertical: 12,
-										paddingHorizontal: 20,
-
-										justifyContent: "center",
-										alignItems: "center",
-									}}
-									className="border-2 border-amber-700 rounded-lg"
-								>
-									<Text
-										style={{
-											fontFamily: "petitCochon",
-											fontSize: 18,
-										}}
-										className="text-amber-700"
-									>
-										{"<"} HOME
-									</Text>
-								</TouchableHighlight>
-
-								{/* Next Button (CTA with larger width) */}
-								<TouchableHighlight
-									activeOpacity={0.6}
-									underlayColor={"#a3e635"}
-									onPress={async () => {
-										const { sequence, missingNumber } = generateSequence(
-											level,
-											xp
-										);
-										setSequence(sequence);
-										setMissingNumber(missingNumber);
-										setRoboFeedback(
-											"Here is a new sequence, Guess the missing number to unlock the treasure box."
-										);
-
-										setAttempt(1);
-										setGuess("");
-										const { sound } = await Audio.Sound.createAsync(
-											require("../assets/sfx/replay.wav")
-										);
-										setSound(sound);
-										await sound.playAsync();
-										Haptics.notificationAsync(
-											Haptics.NotificationFeedbackType.Warning
-										);
-										setGameOver(false);
-									}}
-									style={{
-										paddingVertical: 12,
-										paddingHorizontal: 30,
-
-										justifyContent: "center",
-										alignItems: "center",
-										minWidth: 150,
-									}}
-									className="bg-lime-600 rounded-lg"
-								>
-									<Text
-										style={{
-											fontFamily: "petitCochon",
-											fontSize: 18,
-										}}
-										className="text-lime-900 flex-row text-center items-center"
-									>
-										PLAY AGAIN {">"}
-									</Text>
-								</TouchableHighlight>
-							</View>
-						</View>
-					</View>
-				</Modal>
-
-				{/* Level Up modal */}
-				<Modal
-					statusBarTranslucent={true}
-					animationType="fade"
-					transparent={true}
-					visible={showLevelUp}
-					onShow={async () => {
-						const { sound } = await Audio.Sound.createAsync(
-							require("../assets/sfx/levelUp2.wav")
-						);
-						setSound(sound);
-						await sound.playAsync();
-					}}
-					onRequestClose={async () => {
-						const { sequence, missingNumber } = generateSequence(level, xp);
-						setSequence(sequence);
-						setMissingNumber(missingNumber);
-						setRoboFeedback(
-							"Here is a new sequence, Guess the missing number to unlock the treasure box."
-						);
-						const { sound } = await Audio.Sound.createAsync(
-							require("../assets/sfx/replay.wav")
-						);
-						setSound(sound);
-						await sound.playAsync();
-						Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-						setAttempt(1);
-						setLevelUp(false);
-						setShowLevelUp(false);
-					}}
-					style={{ margin: 0 }}
-				>
-					<View
-						style={{
-							flex: 1,
-							justifyContent: "center",
-							alignItems: "center",
-							backgroundColor: "rgba(0, 0, 0, 0.7)",
-						}}
-					>
-						<View
-							style={{
-								width: 340,
-								padding: 20,
-
-								alignItems: "center",
-								shadowColor: "#000",
-								borderRadius: 50,
-								shadowOffset: { width: 0, height: 2 },
-								shadowOpacity: 0.25,
-								shadowRadius: 4,
-								elevation: 5,
-							}}
-							className="bg-lime-50 border-4 border-b-8 border-t-8 border-lime-800"
-						>
-							{/* Header */}
-							<View style={{ marginBottom: 0, alignItems: "center" }}>
-								<Image
-									style={{
-										width: 340,
-										height: 300,
-										marginTop: -200,
-									}}
-									source={require("../assets/images/levelUp.svg")}
-									contentFit="contain"
-								/>
-								<Text
-									style={{
-										fontFamily: "handjetBold",
-									}}
-									className="text-9xl text-lime-950 text-center"
-								>
-									{level}
-								</Text>
-							</View>
-
-							{/* Body */}
-							<View style={{ marginBottom: 20, alignItems: "center" }}>
-								<Text
-									style={{
-										fontFamily: "handjetMedium",
-									}}
-									className="text-3xl text-lime-950 text-center px-5 p-4"
-								>
-									In this level, the sequences will become progressively more
-									challenging.
-								</Text>
-							</View>
-
-							{/* Footer with Buttons */}
-							<View
-								style={{
-									flexDirection: "row",
-									justifyContent: "space-evenly",
-									width: "100%",
-									marginBottom: 10,
-								}}
-							>
-								<TouchableHighlight
-									activeOpacity={0.6}
-									underlayColor={"#84cc16"}
-									onPress={async () => {
-										setLevelUp(false);
-										setShowLevelUp(false);
-										const { sound } = await Audio.Sound.createAsync(
-											require("../assets/sfx/replay.wav")
-										);
-										setSound(sound);
-										await sound.playAsync();
-										Haptics.notificationAsync(
-											Haptics.NotificationFeedbackType.Warning
-										);
-									}}
-									style={{
-										paddingVertical: 12,
-										paddingHorizontal: 30,
-
-										justifyContent: "center",
-										alignItems: "center",
-										minWidth: 150,
-									}}
-									className="bg-lime-600 rounded-lg"
-								>
-									<Text
-										style={{
-											fontFamily: "petitCochon",
-											fontSize: 18,
-										}}
-										className="text-lime-900 flex-row text-center items-center"
-									>
-										WOO-HOO{"  >"}
-									</Text>
-								</TouchableHighlight>
-							</View>
-						</View>
-					</View>
-				</Modal>
 
 				{/* Header */}
-
 				<View className="flex flex-row justify-evenly items-center pt-6">
 					<TouchableHighlight
 						activeOpacity={0.6}
@@ -956,21 +976,23 @@ export default function Sequence() {
 						activeOpacity={0.6}
 						underlayColor={"transparent"}
 						onPress={async () => {
+							const { question, answer } = generateEquation(level);
+							setQuestion(question);
+							setQuestionAnswer(answer);
+							setRoboFeedback(
+								"Below is a new math puzzle. Analyze the equation, solve it, and type your answer in the box."
+							);
+							setGuess("");
+							setAttempt(1);
+
 							const { sound } = await Audio.Sound.createAsync(
 								require("../assets/sfx/replay.wav")
 							);
 							setSound(sound);
 							await sound.playAsync();
 							Haptics.notificationAsync(
-								Haptics.NotificationFeedbackType.Warning
+								Haptics.NotificationFeedbackType.Success
 							);
-							const { sequence, missingNumber } = generateSequence(level, xp);
-							setSequence(sequence);
-							setMissingNumber(missingNumber);
-							setRoboFeedback(
-								"Here is a new sequence, Guess the missing number to unlock the treasure box."
-							);
-							setAttempt(1);
 						}}
 					>
 						<Image
@@ -982,11 +1004,7 @@ export default function Sequence() {
 							contentFit="cover"
 						/>
 					</TouchableHighlight>
-					<TouchableHighlight
-						activeOpacity={0.6}
-						underlayColor={"transparent"}
-						onPress={removeData}
-					>
+					<TouchableHighlight activeOpacity={0.6} underlayColor={"transparent"}>
 						<Image
 							style={{
 								width: 40,
@@ -1000,7 +1018,7 @@ export default function Sequence() {
 
 				{/* Robot Dialouge */}
 				{showRoboFeedback && (
-					<View className=" flex flex-row justify-center items-center bg-cyan-700  mt-12 m-5 px-5 py-3 rounded-xl">
+					<View className=" flex flex-row justify-center items-center bg-cyan-700  mt-10 m-5 px-5 py-3 rounded-lg">
 						<View>
 							<Image
 								style={{
@@ -1019,7 +1037,7 @@ export default function Sequence() {
 									marginLeft: 15,
 									width: 240,
 								}}
-								className="text-cyan-50 text-2xl"
+								className="text-cyan-50 text-2xl	"
 							>
 								{roboFeedback}
 							</Text>
@@ -1029,56 +1047,19 @@ export default function Sequence() {
 
 				{/* Input box */}
 				{showInputBox && (
-					<View>
+					<View className="flex flex-col items-end self-center mt-5">
 						<View
-							style={{ width: 340 }}
-							className="flex-row justify-between items-center self-center"
+							style={{ width: 330, height: 280 }}
+							className="bg-cyan-50 border-4 border-cyan-700 rounded-2xl flex justify-center items-center"
 						>
-							{sequence.map((number, index) => {
-								return (
-									<View
-										key={index}
-										style={{ height: 60, width: 60, marginTop: 10 }}
-										className={`rounded-lg border-4 ${
-											number !== null
-												? "bg-cyan-50 border-cyan-700"
-												: " bg-lime-50 border-lime-700"
-										}  flex items-center justify-center`}
-									>
-										{number === null ? (
-											<Text
-												style={{
-													fontFamily: "handjetBold",
-												}}
-												className={"text-center text-4xl text-lime-700"}
-											>
-												{guess === "" ? "?" : guess}
-											</Text>
-										) : (
-											<Text
-												style={{
-													fontFamily: "handjetBold",
-												}}
-												className={"text-center text-4xl text-cyan-950"}
-											>
-												{number}
-											</Text>
-										)}
-									</View>
-								);
-							})}
-						</View>
+							<Text
+								style={{ fontFamily: "handjetMedium" }}
+								className="text-5xl font-semibold text-end text-cyan-950"
+							>
+								{question}
 
-						{/* body Image */}
-						<View className="self-center mt-10">
-							<Image
-								style={{
-									width: 300,
-									height: 230,
-								}}
-								source={require("../assets/images/treasure.svg")}
-								contentFit="contain"
-							/>
+								<Text className="text-lime-700">{guess ? guess : "?"}</Text>
+							</Text>
 						</View>
 					</View>
 				)}
@@ -1130,7 +1111,7 @@ export default function Sequence() {
 										color: "#ECFEFF",
 									}}
 								>
-									1
+									1{" "}
 								</Text>
 							</TouchableHighlight>
 							<TouchableHighlight
@@ -1220,7 +1201,7 @@ export default function Sequence() {
 										color: "#ECFEFF",
 									}}
 								>
-									0
+									0{" "}
 								</Text>
 							</TouchableHighlight>
 						</View>
@@ -1376,6 +1357,14 @@ export default function Sequence() {
 									backgroundColor: "#164E63",
 									borderRadius: 10,
 								}}
+								onLongPress={async () => {
+									appendNumber(".");
+									const { sound } = await Audio.Sound.createAsync(
+										require("../assets/sfx/ballTap.wav")
+									);
+									setSound(sound);
+									await sound.playAsync();
+								}}
 								underlayColor="#0E7490"
 								onPress={async () => {
 									appendNumber(7);
@@ -1394,6 +1383,12 @@ export default function Sequence() {
 									}}
 								>
 									7
+									<Text
+										style={{ fontFamily: "roboto" }}
+										className="text-gray-300"
+									>
+										.
+									</Text>
 								</Text>
 							</TouchableHighlight>
 							<TouchableHighlight
@@ -1436,6 +1431,14 @@ export default function Sequence() {
 									backgroundColor: "#164E63",
 									borderRadius: 10,
 								}}
+								onLongPress={async () => {
+									appendNumber("-");
+									const { sound } = await Audio.Sound.createAsync(
+										require("../assets/sfx/ballTap.wav")
+									);
+									setSound(sound);
+									await sound.playAsync();
+								}}
 								underlayColor="#0E7490"
 								onPress={async () => {
 									appendNumber(9);
@@ -1454,6 +1457,13 @@ export default function Sequence() {
 									}}
 								>
 									9
+									<Text
+										style={{ fontFamily: "roboto" }}
+										className="text-gray-300"
+									>
+										{" "}
+										-
+									</Text>
 								</Text>
 							</TouchableHighlight>
 							<TouchableHighlight
@@ -1473,13 +1483,11 @@ export default function Sequence() {
 									);
 									setSound(sound);
 									await sound.playAsync();
-
 									const usersGuess = parseInt(guess, 10);
 
-									if (usersGuess === missingNumber) {
+									if (usersGuess === questionAnswer) {
 										setXpEarned(500);
 										addXp(500);
-
 										if (attempt === 1) {
 											setCoinsEarned(500 * level);
 											addCoins(500 * level);
@@ -1533,13 +1541,8 @@ export default function Sequence() {
 										Haptics.notificationAsync(
 											Haptics.NotificationFeedbackType.Error
 										);
-
-										setGuess("");
 										setGameOver(true);
-									} else if (
-										missingNumber !== null &&
-										missingNumber > usersGuess
-									) {
+									} else if (usersGuess > questionAnswer) {
 										const { sound } = await Audio.Sound.createAsync(
 											require("../assets/sfx/wrongAnswer.mp3")
 										);
@@ -1549,14 +1552,9 @@ export default function Sequence() {
 											Haptics.NotificationFeedbackType.Warning
 										);
 										setAttempt(attempt + 1);
-										setRoboFeedback(
-											"The number is higher than your guess, please try again."
-										);
+										setRoboFeedback("The number is lower than your guess.");
 										setGuess("");
-									} else if (
-										missingNumber !== null &&
-										missingNumber < usersGuess
-									) {
+									} else if (usersGuess < questionAnswer) {
 										const { sound } = await Audio.Sound.createAsync(
 											require("../assets/sfx/wrongAnswer.mp3")
 										);
@@ -1566,9 +1564,7 @@ export default function Sequence() {
 											Haptics.NotificationFeedbackType.Warning
 										);
 										setAttempt(attempt + 1);
-										setRoboFeedback(
-											"The number is lower than your guess, please try again."
-										);
+										setRoboFeedback("The number is higher than your guess");
 										setGuess("");
 									}
 								}}
@@ -1589,4 +1585,6 @@ export default function Sequence() {
 			</LinearGradient>
 		</SafeAreaView>
 	);
-}
+};
+
+export default GuessEquation;
